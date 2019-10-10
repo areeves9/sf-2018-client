@@ -1,0 +1,25 @@
+/* padding and border no longer increase width */
+* {
+    -webkit-box-sizing: border-box;
+       -moz-box-sizing: border-box;
+            box-sizing: border-box;
+  }
+
+
+/* disable horiztonal scrolling */
+
+html, body {
+    max-width: 100%;
+    overflow-x: hidden;
+}
+
+#mapid { 
+    width: auto;
+    height: 600px; 
+}
+
+#hero {
+    background-image: url("https://source.unsplash.com/o4mP43oPGHk/1600x900");
+    background-size: cover;
+    height: 150px;
+  }
