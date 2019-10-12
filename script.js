@@ -2,7 +2,8 @@
 const appData = {
     prediction: {},
     incidents: [],
-    riskByHour: [],
+    riskByHourScore: [],
+    riskHours: [],
 };
 
 const metaData = {
@@ -12,6 +13,10 @@ const metaData = {
 const myChart = {
     chart: null,
 };
+
+const myLineChart = {
+    chart: null,
+}
 
 const radius = 300;
 
@@ -53,7 +58,21 @@ function getLocalTimeString() {
     return localTime;
 }
 
+function getCurrentDate() {
+    const date = new Date();
+    const day = date.getDate();
+    const month = date.getMonth();
+    const year = date.getFullYear();
 
+    return `${day}/${month}/${year}`;
+}
+
+function setRiskByHourScore(objectArray) {
+    objectArray.map(obj => {
+        appData.riskByHourScore.push(obj.risk_score);
+        appData.riskHours.push(obj.hour);
+    })
+};
 
 // get prediction and render two chart.js instances - risk score and risk over time
 function getPrediction() {
@@ -68,12 +87,18 @@ function getPrediction() {
         } else {
             // set xhr response
             const response = xhr.response;
+            console.log(response)
             // set riskbyhour array
             const riskByHour = response.riskbyhour.data;
             // update application state
             appData.prediction = response;
-            // update application state
-            appData.riskByHour = riskByHour;
+         
+
+
+            setRiskByHourScore(riskByHour);
+
+
+
             // create a marker instance with hard-coded lat,lng for test purposes
             const currentLocationMarker = L.marker(
                 [37.759101, -122.414791], {icon: greenIcon}).addTo(mymap);
@@ -84,6 +109,8 @@ function getPrediction() {
             <h6 class="text-center">${appData.prediction.intersection}</h6>`;
             // create chart instance and insert into DOM
             createChart(appData.prediction.riskbyhour.data[0].risk_score);
+
+            createLineChart(appData.riskHours, appData.riskByHourScore)
             // POSITION PREDICTION RESPONSE MARKUP IN DOM
             chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
             chart.insertAdjacentHTML('afterend', intersectionMarkup);
@@ -159,10 +186,11 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=p
 }).addTo(mymap);
 
 
-// CHARTS JS
-const ctx = document.getElementById('myChart').getContext('2d');
+// CHARTS JS - RADIAL
 
 function createChart(score) {
+    const ctx = document.getElementById('myChart').getContext('2d');
+    // instantiate chart.js object
     const chart = new Chart(ctx, {
         // The type of chart we want to create
         type: 'radialGauge',
@@ -196,6 +224,28 @@ function createChart(score) {
     });
     return myChart.chart = chart;
 };
+
+// CHARTS JS - LINE
+function createLineChart(hours, riskScores) {
+    const ctx = document.getElementById('myLineChart').getContext('2d');
+
+    const myLineChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+            labels: hours,
+            datasets: [
+                {
+                    data: riskScores,
+                    label: `Risk Score By Hour (${getCurrentDate()})`,
+                    borderColor: "blue",
+                },
+            ],
+        },
+        options: '',
+    });
+    return myLineChart.chart = myLineChart;
+}
+
 
 getPrediction();
 getVehicleData();
