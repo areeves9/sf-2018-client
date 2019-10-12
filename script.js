@@ -2,6 +2,7 @@
 const appData = {
     prediction: {},
     incidents: [],
+    riskByHour: [],
 };
 
 const metaData = {
@@ -45,8 +46,16 @@ const greenIcon = new L.Icon({
   });
 
 
+// APPLICATION METHODS
+function getLocalTimeString() {
+    const date = new Date();
+    const localTime = date.toLocaleTimeString('en-us');
+    return localTime;
+}
 
 
+
+// get prediction and render two chart.js instances - risk score and risk over time
 function getPrediction() {
     // API POST REQUEST TO PREDICTION SERVER
     let xhr = new XMLHttpRequest();
@@ -57,16 +66,21 @@ function getPrediction() {
         if (xhr.status != 200) {
             alert(`Error ${xhr.status}: ${xhr.statusText}`);
         } else {
-            let response = xhr.response;
+            // set xhr response
+            const response = xhr.response;
+            // set riskbyhour array
+            const riskByHour = response.riskbyhour.data;
+            // update application state
             appData.prediction = response;
-            const date = new Date();
-            const localTime = date.toLocaleTimeString('en-us');
+            // update application state
+            appData.riskByHour = riskByHour;
             // create a marker instance with hard-coded lat,lng for test purposes
             const currentLocationMarker = L.marker(
                 [37.759101, -122.414791], {icon: greenIcon}).addTo(mymap);
+            // get DOM object myChart
             const chart = document.getElementById("myChart");
             const riskLevelMarkup = `<h3 class="text-center">${appData.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
-            const intersectionMarkup = `<h4 class="text-center">${localTime} </h4>
+            const intersectionMarkup = `<h4 class="text-center">${getLocalTimeString()} </h4>
             <h6 class="text-center">${appData.prediction.intersection}</h6>`;
             // create chart instance and insert into DOM
             createChart(appData.prediction.riskbyhour.data[0].risk_score);
@@ -118,15 +132,7 @@ function getVehicleData() {
             <p class='text-center'><a href=''>More Incidents</a></p>`;
 
             map.insertAdjacentHTML('beforebegin', totalMarkup);
-            // const newArr = [...vehicleIncidents];
-            // const newArr1 = [...vehicleIncidents];
-            // const min = newArr.reduce((a, b) => {
-            //     return a.incident_datetime < b.incident_datetime ? a.incident_datetime : b.incident_datetime;
-            // });
-            // const max = newArr1.reduce((a, b) => {
-            //     return a.incident_datetime > b.incident_datetime ? a.incident_datetime : b.incident_datetime;
-            // });
-            // console.log(min, max);
+
         };
     };
 }
@@ -154,10 +160,10 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=p
 
 
 // CHARTS JS
-var ctx = document.getElementById('myChart').getContext('2d');
+const ctx = document.getElementById('myChart').getContext('2d');
 
 function createChart(score) {
-    var chart = new Chart(ctx, {
+    const chart = new Chart(ctx, {
         // The type of chart we want to create
         type: 'radialGauge',
         // The data for our dataset
