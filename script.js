@@ -236,12 +236,34 @@ function createLineChart(hours, riskScores) {
             datasets: [
                 {
                     data: riskScores,
-                    label: `Risk Score By Hour (${getCurrentDate()})`,
+                    label: "Risk Score",
                     borderColor: "blue",
+                    backgroundColor: "white",
+                    pointRadius: 0,
                 },
             ],
         },
-        options: '',
+        options: {
+            legend: {
+                display: false,
+            },
+            scales: {
+                xAxes: [{
+                    gridLines: {
+                        drawOnChartArea: false
+                    }
+                }],
+                yAxes: [{
+                    gridLines: {
+                        drawOnChartArea: false
+                    }
+                }]
+            },
+            title: {
+                display: true,
+                text: `Risk Score By Hour (${getCurrentDate()})`,
+              }
+        },
     });
     return myLineChart.chart = myLineChart;
 }
