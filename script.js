@@ -59,22 +59,20 @@ function getPrediction() {
         } else {
             let response = xhr.response;
             appData.prediction = response;
-            console.log(appData.prediction.riskbyhour.data[0].risk_score)
             const date = new Date();
             const localTime = date.toLocaleTimeString('en-us');
             // create a marker instance with hard-coded lat,lng for test purposes
             const currentLocationMarker = L.marker(
                 [37.759101, -122.414791], {icon: greenIcon}).addTo(mymap);
-
-            createChart(appData.prediction.riskbyhour.data[0].risk_score);
-
             const chart = document.getElementById("myChart");
-            const riskMarkup = `<h3 class="text-center">${appData.prediction.riskbyhour.data[0].risk_level} Risk</h3>
-            <h1 class="text-center">${appData.prediction.riskbyhour.data[0].risk_score}</h1>
-            <h4 class="text-center">${localTime} </h4>
+            const riskLevelMarkup = `<h3 class="text-center">${appData.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
+            const intersectionMarkup = `<h4 class="text-center">${localTime} </h4>
             <h6 class="text-center">${appData.prediction.intersection}</h6>`;
-
-            chart.insertAdjacentHTML('beforebegin', riskMarkup);
+            // create chart instance and insert into DOM
+            createChart(appData.prediction.riskbyhour.data[0].risk_score);
+            // POSITION PREDICTION RESPONSE MARKUP IN DOM
+            chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
+            chart.insertAdjacentHTML('afterend', intersectionMarkup);
             currentLocationMarker.bindPopup(
                 `
                 <p>Risk Level: ${response['risk_level']}</p>
