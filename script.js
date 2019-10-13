@@ -1,7 +1,29 @@
+// LEAFLET JS MAP INSTANCE
+const mymap = L.map('mapid', {
+    center: [37.759101, -122.414791],
+    zoom: 16,
+    zoomControl: true,
+    dragging: true,
+    doubleClickZoom: false,
+    scrollWheelZoom: false,
+    touchZoom: true,
+});
+
+L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
+    maxZoom: 18,
+    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
+        '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
+        'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
+    id: 'mapbox.streets'
+}).addTo(mymap);
+
+
 // APPLICATION STATE
 const appState = {
+    currentPageVehicleCrimeAPI: null,
     prediction: {},
     incidents: [],
+    incidentMarkers: [],
     riskByHourScore: [],
     riskHours: [],
 };
@@ -61,10 +83,10 @@ function getLocalTimeString() {
 function getCurrentDate() {
     const date = new Date();
     const day = date.getDate();
-    const month = date.getMonth();
+    const month = date.getMonth() + 1;
     const year = date.getFullYear();
 
-    return `${day}/${month}/${year}`;
+    return `${month}/${day}/${year}`;
 }
 
 function setRiskByHourScore(objectArray) {
@@ -125,7 +147,7 @@ function getPrediction() {
 }
 
 
-function getVehicleData() {
+function getVehicleIncidents() {
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     let xhr1 = new XMLHttpRequest();
     xhr1.open('GET', services.vehicleCrimeApi);
@@ -136,59 +158,76 @@ function getVehicleData() {
             console.log(`Error ${xhr1.status}: ${xhr1.statusText}`);
         } else {
             let response = xhr1.response;
+            appState.currentPageVehicleCrimeAPI = response.meta.current_page;
             const { total_incidents, per_page } = response.meta;
             const vehicleIncidents = response.vehicle_incidents;
-            // set application state
+            // update application state
             appState.incidents = vehicleIncidents;
-            // create cluster instance
-            let markers = L.markerClusterGroup();
-            // iterate through array of incident objects
-            vehicleIncidents.map(item => {
-                // for each incident object, add a layer to the marker cluster instance
-                markers.addLayer(L.marker([item.latitude, item.longitude], {icon: redIcon}))
-                .bindPopup(`
-                    <p>${item.incident_subcategory}</p>`
-                );
-            });
-            // add all the layers to the map instance
-            mymap.addLayer(markers);
+            mymap.addLayer(createIncidentMarkers(appState.incidents));
 
             const map = document.getElementById("mapid");
-            const totalMarkup = `<h6 class="text-center">Showing ${per_page} of ${total_incidents} Vehicle Incidents</h6>
-            <p class='text-center'><a href=''>More Incidents</a></p>`;
-
+            const totalMarkup = `<h6 class="text-center">Showing ${per_page} of ${total_incidents}</h6>
+            <p class='text-center'><button onclick="hotdogScript()">More Incidents</button></p>`;
             map.insertAdjacentHTML('beforebegin', totalMarkup);
 
         };
     };
 }
 
+function hotdogScript() {
+    // clear previous markers from the map
+    appState.incidentMarkers.clearLayers();
 
+    let xhr1 = new XMLHttpRequest();
+    xhr1.open('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`);
+    xhr1.responseType = 'json';
+    xhr1.send();
+    xhr1.onload = function() {
+        if (xhr1.status != 200) {
+            console.log(`Error ${xhr1.status}: ${xhr1.statusText}`);
+        } else {
+            let response = xhr1.response;
+            console.log(response);
+            appState.currentPageVehicleCrimeAPI = response.meta.current_page;
+            // const { total_incidents, per_page } = response.meta;
+            const vehicleIncidents = response.vehicle_incidents;
+            appState.incidents = [...appState.incidents, ...vehicleIncidents];
+            console.log(appState.incidents);
+            // mymap.addLayer(createIncidentMarkers(appState.incidents));
 
-// LEAFLET JS MAP INSTANCE
-const mymap = L.map('mapid', {
-    center: [37.759101, -122.414791],
-    zoom: 16,
-    zoomControl: true,
-    dragging: true,
-    doubleClickZoom: false,
-    scrollWheelZoom: false,
-    touchZoom: true,
-});
+            // const map = document.getElementById("mapid");
+            // const totalMarkup = `<h6 class="text-center">Showing ${per_page} of ${total_incidents}</h6>
+            // <p class='text-center'><button onclick="hotdogScript()">More Incidents</button></p>`;
+            // map.insertAdjacentHTML('beforebegin', totalMarkup);
 
-L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=pk.eyJ1IjoibWFwYm94IiwiYSI6ImNpejY4NXVycTA2emYycXBndHRqcmZ3N3gifQ.rJcFIG214AriISLbB6B5aw', {
-    maxZoom: 18,
-    attribution: 'Map data &copy; <a href="https://www.openstreetmap.org/">OpenStreetMap</a> contributors, ' +
-        '<a href="https://creativecommons.org/licenses/by-sa/2.0/">CC-BY-SA</a>, ' +
-        'Imagery © <a href="https://www.mapbox.com/">Mapbox</a>',
-    id: 'mapbox.streets'
-}).addTo(mymap);
+        };
+    };
+}
+
+function createIncidentMarkers(incidents) {
+    // create cluster instance
+    const markers = L.markerClusterGroup();
+    // iterate through array of incident objects
+    incidents.map(item => {
+        // for each incident object, add a layer to the marker cluster instance
+        markers.addLayer(L.marker([item.latitude, item.longitude], {icon: redIcon}))
+        .bindPopup(`<ul>
+            <li>${item.incident_subcategory}</li>
+            <li>${item.incident_description}</li>
+            <li>${item.incident_date}</li>
+        </ul>`
+        );
+    });
+    return appState.incidentMarkers = markers;
+}
 
 
 // CHARTS JS - RADIAL
-
 function createChart(score) {
     const ctx = document.getElementById('myChart').getContext('2d');
+    // const gradientStroke = ctx.createLinearGradient(200, 0, 100, 0);
+    // gradientStroke.addColorStop(0.55, "#8fd71c");
+    // gradientStroke.addColorStop(1, "#ff1414");
     // instantiate chart.js object
     const chart = new Chart(ctx, {
         // The type of chart we want to create
@@ -200,11 +239,8 @@ function createChart(score) {
             ],
             datasets: [
                 {
-                    backgroundColor: [
-                        "#FF6384",
-                        "#212529",
-                    ],
-                    data: [score, (100-score)],
+                    backgroundColor: "#ff1414",
+                    data: [score],
                 }
             ],
         },
@@ -212,15 +248,14 @@ function createChart(score) {
         options: {
             centerPercentage: 80,
             centerArea: {
-                fontSize: '2.5rem',
-                // text: `Risk Score ${appState.riskByHourScore[0].risk_score}`,
+                fontSize: '60px',
             },
             legend: {
                 display: false,
             },
             responsive: true,
             rotation: -Math.PI / 2,
-            trackColor: 'rgb(204, 221, 238)',
+            trackColor: '#E0E0E0',
             tooltips: {
                 enabled: false,
             },
@@ -275,7 +310,7 @@ function createLineChart(hours, riskScores) {
 
 
 getPrediction();
-getVehicleData();
+getVehicleIncidents();
 
 // GEOLOCATION API - Conditional, then set global userGeoLocation object with position.coords.lat/lng
 // if ("geolocation" in navigator) {
