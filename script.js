@@ -1,5 +1,5 @@
 // APPLICATION STATE
-const appData = {
+const appState = {
     prediction: {},
     incidents: [],
     riskByHourScore: [],
@@ -69,8 +69,8 @@ function getCurrentDate() {
 
 function setRiskByHourScore(objectArray) {
     objectArray.map(obj => {
-        appData.riskByHourScore.push(obj.risk_score);
-        appData.riskHours.push(obj.hour);
+        appState.riskByHourScore.push(obj.risk_score);
+        appState.riskHours.push(obj.hour);
     })
 };
 
@@ -87,11 +87,10 @@ function getPrediction() {
         } else {
             // set xhr response
             const response = xhr.response;
-            console.log(response)
             // set riskbyhour array
             const riskByHour = response.riskbyhour.data;
             // update application state
-            appData.prediction = response;
+            appState.prediction = response;
          
 
 
@@ -104,13 +103,13 @@ function getPrediction() {
                 [37.759101, -122.414791], {icon: greenIcon}).addTo(mymap);
             // get DOM object myChart
             const chart = document.getElementById("myChart");
-            const riskLevelMarkup = `<h3 class="text-center">${appData.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
+            const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
             const intersectionMarkup = `<h4 class="text-center">${getLocalTimeString()} </h4>
-            <h6 class="text-center">${appData.prediction.intersection}</h6>`;
+            <h6 class="text-center">${appState.prediction.intersection}</h6>`;
             // create chart instance and insert into DOM
-            createChart(appData.prediction.riskbyhour.data[0].risk_score);
+            createChart(appState.prediction.riskbyhour.data[0].risk_score);
 
-            createLineChart(appData.riskHours, appData.riskByHourScore)
+            createLineChart(appState.riskHours, appState.riskByHourScore)
             // POSITION PREDICTION RESPONSE MARKUP IN DOM
             chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
             chart.insertAdjacentHTML('afterend', intersectionMarkup);
@@ -140,7 +139,7 @@ function getVehicleData() {
             const { total_incidents, per_page } = response.meta;
             const vehicleIncidents = response.vehicle_incidents;
             // set application state
-            appData.incidents = vehicleIncidents;
+            appState.incidents = vehicleIncidents;
             // create cluster instance
             let markers = L.markerClusterGroup();
             // iterate through array of incident objects
@@ -211,11 +210,17 @@ function createChart(score) {
         },
         // Configuration options go here
         options: {
+            centerPercentage: 80,
+            centerArea: {
+                fontSize: '2.5rem',
+                // text: `Risk Score ${appState.riskByHourScore[0].risk_score}`,
+            },
             legend: {
                 display: false,
             },
             responsive: true,
-            rotation: 1 * Math.PI,
+            rotation: -Math.PI / 2,
+            trackColor: 'rgb(204, 221, 238)',
             tooltips: {
                 enabled: false,
             },
