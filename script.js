@@ -101,7 +101,10 @@ function setRiskByHourScore(objectArray) {
 function createXHRequest(method, url) {
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     const xhr = new XMLHttpRequest();
+   
     return new Promise((resolve, reject) => {
+  
+        
         // listen for completed request, then process
         xhr.onreadystatechange = () => {
             // Only run if the request is complete
@@ -127,9 +130,17 @@ function createXHRequest(method, url) {
     });
 };
 
+function isLoading() {
+    const loading = `<div class="spinner-border" role="status">
+    <span class="sr-only">Loading...</span>
+    </div>`;
+    return loading; 
+};
+
 
 // get prediction and render two chart.js instances - risk score and risk over time
 function getPrediction() {
+    // document.getElementById('mapid').innerHTML = isLoading()
     // HTTP POST REQUEST TO PREDICTION API SERVER
     createXHRequest('POST', services.predictionApi)
     .then((xhr) => {
@@ -158,10 +169,14 @@ function getPrediction() {
         // POSITION PREDICTION RESPONSE MARKUP IN DOM
         chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
         chart.insertAdjacentHTML('afterend', intersectionMarkup);
+
+        const { risk_level, risk_score } = appState.prediction.riskbyhour.data[0];
+
+        // console.log(appState.prediction.riskbyhour.data[0].risk_level)
         currentLocationMarker.bindPopup(
             `
-            <p>Risk Level: ${jsonResponse['risk_level']}</p>
-            <p>Risk Score: ${jsonResponse['risk_score']}</p>
+            <p>Risk Level: ${risk_level}</p>
+            <p>Risk Score: ${risk_score}</p>
             `
             );
     })
@@ -173,7 +188,7 @@ function getPrediction() {
 function renderMapAdjacentHTML(totalIncidents) {
     const totalMarkup = `<div class="col">
     <h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>
-     <button style="display:block;" class="mx-auto mb-2 btn btn-secondary" onclick="getNextVehicleIncidents()">More Incidents</button>
+     <button style="display:block;" class="mx-auto mb-2 btn btn-success" onclick="getNextVehicleIncidents()">More Incidents</button>
     </div>`;
     if (appState.incidents.length > 0) {
         document.getElementById("mapid").previousSibling.remove();
@@ -297,7 +312,6 @@ function createChart(score) {
 // CHARTS JS - LINE
 function createLineChart(hours, riskScores) {
     const ctx = document.getElementById('myLineChart').getContext('2d');
-
     const myLineChart = new Chart(ctx, {
         type: 'line',
         data: {
