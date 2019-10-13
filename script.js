@@ -24,6 +24,7 @@ const appState = {
     prediction: {},
     incidents: [],
     incidentMarkers: [],
+    isLoading: false,
     riskByHourScore: [],
     riskHours: [],
     totalIncidents: null
@@ -119,21 +120,12 @@ function createXHRequest(method, url) {
         };
         // HTTP request
         xhr.open(method, url);
+
+        xhr.responseType = 'json';
         // send HTTP request
         xhr.send();
     });
 };
-    // xhr.open(method, url);
-    // xhr.responseType = 'json';
-    // xhr.send();
-    // xhr.onload = function() {
-    //     if (xhr.status != 200) {
-    //         console.log(`Error ${xhr.status}: ${xhr.statusText}`);
-    //     } else {
-    //         const response = xhr.response;
-    //         return response;
-    //     };
-    // };
 
 
 // get prediction and render two chart.js instances - risk score and risk over time
@@ -181,12 +173,16 @@ function getPrediction() {
 }
 
 function renderMapAdjacentHTML(totalIncidents) {
-    const map = document.getElementById("mapid");
-    const totalMarkup = `
+    const totalMarkup = `<div class="col">
     <h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>
     <p class='text-center'><button onclick="getNextVehicleIncidents()">More Incidents</button></p>
-    `;
-    map.insertAdjacentHTML('beforebegin', totalMarkup);
+    </div>`;
+    if (appState.incidents.length > 0) {
+        document.getElementById("mapid").previousSibling.remove();
+        document.getElementById("mapid").insertAdjacentHTML('beforebegin', totalMarkup);
+    } else {
+        document.getElementById("mapid").insertAdjacentHTML('beforebegin', totalMarkup);
+    }
 };
 
 
@@ -194,7 +190,7 @@ function getVehicleIncidents() {
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     createXHRequest('GET', services.vehicleCrimeApi)
         .then((xhr) => {
-            jsonResponse = JSON.parse(xhr.response);
+            jsonResponse = xhr.response;
             // extract data from JSON
             const { current_page, total_incidents } = jsonResponse.meta;
             const vehicleIncidents = jsonResponse.vehicle_incidents;
@@ -219,7 +215,7 @@ function getNextVehicleIncidents() {
     // request to next page of incident objects
     createXHRequest('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`)
         .then((xhr) => {
-            jsonResponse = JSON.parse(xhr.response);
+            jsonResponse = xhr.response;
             // extract data from JSON
             const { current_page, total_incidents } = jsonResponse.meta;
             // update application state
