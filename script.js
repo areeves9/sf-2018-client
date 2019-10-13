@@ -120,7 +120,7 @@ function createXHRequest(method, url) {
         };
         // HTTP request
         xhr.open(method, url);
-
+        // set response to JSON data type
         xhr.responseType = 'json';
         // send HTTP request
         xhr.send();
@@ -130,52 +130,50 @@ function createXHRequest(method, url) {
 
 // get prediction and render two chart.js instances - risk score and risk over time
 function getPrediction() {
-    // API POST REQUEST TO PREDICTION SERVER
-    let xhr = new XMLHttpRequest();
-    xhr.open('POST', services.predictionApi);
-    xhr.responseType = 'json';
-    xhr.send();
-    xhr.onload = function() {
-        if (xhr.status != 200) {
-            alert(`Error ${xhr.status}: ${xhr.statusText}`);
-        } else {
-            // set xhr response
-            const response = xhr.response;
-            // set riskbyhour array
-            const riskByHour = response.riskbyhour.data;
-            // update application state
-            appState.prediction = response;
-            setRiskByHourScore(riskByHour); 
-            // create a marker instance with hard-coded lat,lng for test purposes
-            const currentLocationMarker = L.marker(
-                [37.759101, -122.414791], {icon: greenIcon}).addTo(mymap);
+    // HTTP POST REQUEST TO PREDICTION API SERVER
+    createXHRequest('POST', services.predictionApi)
+    .then((xhr) => {
+        jsonResponse = xhr.response;
+        const riskByHour = jsonResponse.riskbyhour.data;
+        
+        // update application state
+        appState.prediction = jsonResponse;
+        setRiskByHourScore(riskByHour);
+        
+        // create a marker instance with hard-coded lat,lng for test purposes
+        const currentLocationMarker = L.marker(
+            [37.759101, -122.414791], {icon: greenIcon})
+            .addTo(mymap);
+        
             // get DOM object myChart
-            const chart = document.getElementById("myChart");
-            const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
-            const intersectionMarkup = `<h4 class="text-center">${getLocalTimeString()} </h4>
-            <h6 class="text-center">${appState.prediction.intersection}</h6>`;
-            // create chart instance and insert into DOM
-            createChart(appState.prediction.riskbyhour.data[0].risk_score);
-
-            createLineChart(appState.riskHours, appState.riskByHourScore)
-            // POSITION PREDICTION RESPONSE MARKUP IN DOM
-            chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
-            chart.insertAdjacentHTML('afterend', intersectionMarkup);
-            currentLocationMarker.bindPopup(
-                `
-                <p>Risk Level: ${response['risk_level']}</p>
-                <p>Risk Score: ${response['risk_score']}</p>
-                `
-                );
-
-        };
-    };
-}
+        const chart = document.getElementById("myChart");
+        const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
+        const intersectionMarkup = `<h4 class="text-center">${getLocalTimeString()} </h4>
+        <h6 class="text-center">${appState.prediction.intersection}</h6>`;
+        
+        // create chart instance and insert into DOM
+        createChart(appState.prediction.riskbyhour.data[0].risk_score);
+        createLineChart(appState.riskHours, appState.riskByHourScore)
+        
+        // POSITION PREDICTION RESPONSE MARKUP IN DOM
+        chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
+        chart.insertAdjacentHTML('afterend', intersectionMarkup);
+        currentLocationMarker.bindPopup(
+            `
+            <p>Risk Level: ${jsonResponse['risk_level']}</p>
+            <p>Risk Score: ${jsonResponse['risk_score']}</p>
+            `
+            );
+    })
+    .catch((error) => {
+        console.log("Something is wrong", error);
+    });
+};
 
 function renderMapAdjacentHTML(totalIncidents) {
     const totalMarkup = `<div class="col">
     <h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>
-    <p class='text-center'><button onclick="getNextVehicleIncidents()">More Incidents</button></p>
+     <button style="display:block;" class="mx-auto mb-2 btn btn-secondary" onclick="getNextVehicleIncidents()">More Incidents</button>
     </div>`;
     if (appState.incidents.length > 0) {
         document.getElementById("mapid").previousSibling.remove();
