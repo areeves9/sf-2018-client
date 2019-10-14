@@ -17,6 +17,30 @@ L.tileLayer('https://api.tiles.mapbox.com/v4/{id}/{z}/{x}/{y}.png?access_token=p
     id: 'mapbox.streets'
 }).addTo(mymap);
 
+// MARKER STYLE OBJECTS
+const greenIcon = new L.Icon({
+    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+  const redIcon = new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
+    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
+    iconSize: [25, 41],
+    iconAnchor: [12, 41],
+    popupAnchor: [1, -34],
+    shadowSize: [41, 41]
+  });
+
+
+// create a marker instance with hard-coded lat,lng for test purposes
+const currentLocationMarker = L.marker(
+    [37.759101, -122.414791], {icon: greenIcon});
+
 
 // APPLICATION STATE
 const appState = {
@@ -29,10 +53,6 @@ const appState = {
     riskHours: [],
     totalIncidents: null
 };
-
-// const metaData = {
-//     totalIncidents: null,
-// };
 
 const myChart = {
     chart: null,
@@ -54,33 +74,12 @@ const services = {
     vehicleCrimeApi: `https://sfcrime-api.herokuapp.com/vehicles/lat/${userGeolocation.latitude}/lng/${userGeolocation.longitude}/${radius}/`,
 };
 
-
-// MARKER STYLE OBJECTS
-const greenIcon = new L.Icon({
-    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-green.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
-
-  const redIcon = new L.Icon({
-    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-2x-red.png',
-    shadowUrl: 'https://cdnjs.cloudflare.com/ajax/libs/leaflet/0.7.7/images/marker-shadow.png',
-    iconSize: [25, 41],
-    iconAnchor: [12, 41],
-    popupAnchor: [1, -34],
-    shadowSize: [41, 41]
-  });
-
-
 // APPLICATION METHODS
 function getLocalTimeString() {
     const date = new Date();
     const localTime = date.toLocaleTimeString('en-us');
     return localTime;
-}
+};
 
 function getCurrentDate() {
     const date = new Date();
@@ -89,7 +88,7 @@ function getCurrentDate() {
     const year = date.getFullYear();
 
     return `${month}/${day}/${year}`;
-}
+};
 
 function setRiskByHourScore(objectArray) {
     objectArray.map(obj => {
@@ -134,40 +133,37 @@ function getPrediction() {
     // HTTP POST REQUEST TO PREDICTION API SERVER
     createXHRequest('POST', services.predictionApi)
     .then((xhr) => {
-        jsonResponse = xhr.response;
-        const riskByHour = jsonResponse.riskbyhour.data;
-        
-        // update application state
+        const jsonResponse = xhr.response;
+        return jsonResponse;
+    })
+    .then((jsonResponse) => {
         appState.prediction = jsonResponse;
-        setRiskByHourScore(riskByHour);
-        
-        // create a marker instance with hard-coded lat,lng for test purposes
-        const currentLocationMarker = L.marker(
-            [37.759101, -122.414791], {icon: greenIcon})
-            .addTo(mymap);
-        
-        const chart = document.getElementById("myChart");
-        const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
-        const intersectionMarkup = `
-        <h6 class="text-center">${appState.prediction.intersection}</h6>`;
-        
+        const { riskbyhour } = appState.prediction;
+        setRiskByHourScore(riskbyhour.data);
+        createLineChart(appState.riskHours, appState.riskByHourScore);        
+    })
+    .then(() => {
         // create chart instance and insert into DOM
         createChart(appState.prediction.riskbyhour.data[0].risk_score);
-        createLineChart(appState.riskHours, appState.riskByHourScore)
-        
-        // POSITION PREDICTION RESPONSE MARKUP IN DOM
+        // const parentDiv = document.getElementById("myChart").parentNode;
+        const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} risk of vehicle crime.</h3>`;
+        const intersectionMarkup = `<h6 class="text-center">${appState.prediction.intersection}</h6>`;
+
+        const chart = document.getElementById("myChart");
         chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
         chart.insertAdjacentHTML('afterend', intersectionMarkup);
-
+    })
+    .then(() => {
         const { risk_level, risk_score } = appState.prediction.riskbyhour.data[0];
-
-        // console.log(appState.prediction.riskbyhour.data[0].risk_level)
+        
+        currentLocationMarker.addTo(mymap);
         currentLocationMarker.bindPopup(
             `
             <p>Risk Level: ${risk_level}</p>
             <p>Risk Score: ${risk_score}</p>
             `
-            );
+        );
+
     })
     .catch((error) => {
         console.log("Something is wrong", error);
@@ -179,7 +175,7 @@ function renderMapAdjacentHTML(totalIncidents) {
     const parentDiv = document.getElementById("mapid").parentNode;
     const wrapper = document.createElement('div');
     wrapper.classList.add("col");
-
+    // if all pages of objects have been retrieved, disable the button
     if (appState.incidents) {
         parentDiv.firstChild.remove();
         wrapper.innerHTML = '';
