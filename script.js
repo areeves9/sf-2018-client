@@ -30,9 +30,9 @@ const appState = {
     totalIncidents: null
 };
 
-const metaData = {
-    totalIncidents: null,
-};
+// const metaData = {
+//     totalIncidents: null,
+// };
 
 const myChart = {
     chart: null,
@@ -101,10 +101,7 @@ function setRiskByHourScore(objectArray) {
 function createXHRequest(method, url) {
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     const xhr = new XMLHttpRequest();
-   
     return new Promise((resolve, reject) => {
-  
-        
         // listen for completed request, then process
         xhr.onreadystatechange = () => {
             // Only run if the request is complete
@@ -130,17 +127,10 @@ function createXHRequest(method, url) {
     });
 };
 
-function isLoading() {
-    const loading = `<div class="spinner-border" role="status">
-    <span class="sr-only">Loading...</span>
-    </div>`;
-    return loading; 
-};
-
-
 // get prediction and render two chart.js instances - risk score and risk over time
 function getPrediction() {
-    // document.getElementById('mapid').innerHTML = isLoading()
+    // const loading = document.createElement(`div`);
+    // document.querySelector(".container-fluid").appendChild(loading);
     // HTTP POST REQUEST TO PREDICTION API SERVER
     createXHRequest('POST', services.predictionApi)
     .then((xhr) => {
@@ -156,10 +146,9 @@ function getPrediction() {
             [37.759101, -122.414791], {icon: greenIcon})
             .addTo(mymap);
         
-            // get DOM object myChart
         const chart = document.getElementById("myChart");
         const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
-        const intersectionMarkup = `<h4 class="text-center">${getLocalTimeString()} </h4>
+        const intersectionMarkup = `
         <h6 class="text-center">${appState.prediction.intersection}</h6>`;
         
         // create chart instance and insert into DOM
@@ -186,15 +175,22 @@ function getPrediction() {
 };
 
 function renderMapAdjacentHTML(totalIncidents) {
-    const totalMarkup = `<div class="col">
-    <h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>
-     <button style="display:block;" class="mx-auto mb-2 btn btn-success" onclick="getNextVehicleIncidents()">More Incidents</button>
-    </div>`;
-    if (appState.incidents.length > 0) {
-        document.getElementById("mapid").previousSibling.remove();
-        document.getElementById("mapid").insertAdjacentHTML('beforebegin', totalMarkup);
+    
+    const parentDiv = document.getElementById("mapid").parentNode;
+    const wrapper = document.createElement('div');
+    wrapper.classList.add("col");
+
+    if (appState.incidents) {
+        parentDiv.firstChild.remove();
+        wrapper.innerHTML = '';
+        wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
+        wrapper.innerHTML += (appState.incidents.length === appState.totalIncidents) ? 
+        `` : `<button style="display:block;" class="mx-auto mb-2 btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
+        parentDiv.insertBefore(wrapper, document.getElementById("mapid"));
     } else {
-        document.getElementById("mapid").insertAdjacentHTML('beforebegin', totalMarkup);
+        wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
+        wrapper.innerHTML += `<button style="display:block;" class="mx-auto mb-2 btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
+        parentDiv.insertBefore(wrapper, document.getElementById("mapid"));
     }
 };
 
@@ -222,11 +218,21 @@ function getVehicleIncidents() {
 };
 
 
-function getNextVehicleIncidents() {
-    // clear previous markers from the map
-    appState.incidentMarkers.clearLayers();
-    // request to next page of incident objects
-    createXHRequest('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`)
+function getNextVehicleIncidents(event) {
+    const button = event.target;
+    button.innerHTML += ` <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+    
+    if (appState.incidents.length === appState.totalIncidents) {
+        return button.style.display = "none";
+    } else {
+        console.log(appState.totalIncidents)
+        // get element with listener
+        
+
+        // clear previous markers from the map
+        appState.incidentMarkers.clearLayers();
+        // request to next page of incident objects
+        createXHRequest('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`)
         .then((xhr) => {
             jsonResponse = xhr.response;
             // extract data from JSON
@@ -242,7 +248,9 @@ function getNextVehicleIncidents() {
         .catch((error) => {
             console.log("Something is wrong", error);
         });
-}
+    }
+    
+};
 
 // take state obj prop incidents arr of objs
 // and iterate through each obj creating a maker
