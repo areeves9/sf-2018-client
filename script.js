@@ -91,7 +91,7 @@ function getCurrentDate() {
 };
 
 function setRiskByHourScore(objectArray) {
-    objectArray.map(obj => {
+    return objectArray.map(obj => {
         appState.riskByHourScore.push(obj.risk_score);
         appState.riskHours.push(obj.hour);
     })
@@ -128,24 +128,26 @@ function createXHRequest(method, url) {
 
 // get prediction and render two chart.js instances - risk score and risk over time
 function getPrediction() {
-    // const loading = document.createElement(`div`);
-    // document.querySelector(".container-fluid").appendChild(loading);
-    // HTTP POST REQUEST TO PREDICTION API SERVER
     createXHRequest('POST', services.predictionApi)
     .then((xhr) => {
         const jsonResponse = xhr.response;
-        return jsonResponse;
+        return appState.prediction = jsonResponse;
+        // const parentDiv = document.getElementById("myChart").parentNode;
+        // parentDiv.innerHTML = '';
+        // return parentDiv.innerHTML += `<div class="text-center">
+        // <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+        // <span class="sr-only">Loading...</span></div>
+        // </div>`;
     })
-    .then((jsonResponse) => {
-        appState.prediction = jsonResponse;
+    .then(() => {
         const { riskbyhour } = appState.prediction;
         setRiskByHourScore(riskbyhour.data);
         createLineChart(appState.riskHours, appState.riskByHourScore);        
     })
     .then(() => {
+        // const parentDiv = document.getElementById("myChart").parentNode;
         // create chart instance and insert into DOM
         createChart(appState.prediction.riskbyhour.data[0].risk_score);
-        // const parentDiv = document.getElementById("myChart").parentNode;
         const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} risk of vehicle crime.</h3>`;
         const intersectionMarkup = `<h6 class="text-center">${appState.prediction.intersection}</h6>`;
 
@@ -221,11 +223,6 @@ function getNextVehicleIncidents(event) {
     if (appState.incidents.length === appState.totalIncidents) {
         return button.style.display = "none";
     } else {
-        console.log(appState.totalIncidents)
-        // get element with listener
-        
-
-        // clear previous markers from the map
         appState.incidentMarkers.clearLayers();
         // request to next page of incident objects
         createXHRequest('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`)
@@ -248,10 +245,7 @@ function getNextVehicleIncidents(event) {
     
 };
 
-// take state obj prop incidents arr of objs
-// and iterate through each obj creating a maker
-// for the map and binding a popup, update 
-// app state with  markerCluseterGroup instance 'markers' 
+// create the markers
 function createIncidentMarkers(incidents) {
     // create cluster instance
     const markers = L.markerClusterGroup();
@@ -267,16 +261,11 @@ function createIncidentMarkers(incidents) {
         );
     });
     return appState.incidentMarkers = markers;
-}
-
+};
 
 // CHARTS JS - RADIAL
 function createChart(score) {
     const ctx = document.getElementById('myChart').getContext('2d');
-    // const gradientStroke = ctx.createLinearGradient(200, 0, 100, 0);
-    // gradientStroke.addColorStop(0.55, "#8fd71c");
-    // gradientStroke.addColorStop(1, "#ff1414");
-    // instantiate chart.js object
     const chart = new Chart(ctx, {
         // The type of chart we want to create
         type: 'radialGauge',
@@ -353,7 +342,7 @@ function createLineChart(hours, riskScores) {
         },
     });
     return myLineChart.chart = myLineChart;
-}
+};
 
 
 getPrediction();
