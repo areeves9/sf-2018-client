@@ -98,6 +98,7 @@ function setRiskByHourScore(objectArray) {
 };
 
 function createXHRequest(method, url) {
+
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     const xhr = new XMLHttpRequest();
     return new Promise((resolve, reject) => {
@@ -128,16 +129,18 @@ function createXHRequest(method, url) {
 
 // get prediction and render two chart.js instances - risk score and risk over time
 function getPrediction() {
+    appState.isLoading = true;
+    const parentDiv = document.getElementById("myChart").parentNode;
+    const loading = `<div class="text-center">
+        <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+        <span class="sr-only">Loading...</span></div>
+        </div>`
+    parentDiv.innerHTML += loading;
     createXHRequest('POST', services.predictionApi)
     .then((xhr) => {
+        // loading();
         const jsonResponse = xhr.response;
         return appState.prediction = jsonResponse;
-        // const parentDiv = document.getElementById("myChart").parentNode;
-        // parentDiv.innerHTML = '';
-        // return parentDiv.innerHTML += `<div class="text-center">
-        // <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
-        // <span class="sr-only">Loading...</span></div>
-        // </div>`;
     })
     .then(() => {
         const { riskbyhour } = appState.prediction;
@@ -145,6 +148,10 @@ function getPrediction() {
         createLineChart(appState.riskHours, appState.riskByHourScore);        
     })
     .then(() => {
+        const parentDiv = document.getElementById("myChart").parentNode;
+        const lastChild = parentDiv.lastChild;
+        lastChild.innerHTML = '';
+
         // const parentDiv = document.getElementById("myChart").parentNode;
         // create chart instance and insert into DOM
         createChart(appState.prediction.riskbyhour.data[0].risk_score);
