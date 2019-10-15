@@ -128,11 +128,12 @@ function createXHRequest(method, url) {
 };
 
 // get prediction and render two chart.js instances - risk score and risk over time
+// BREAK THIS INTO FUNCTIONS
 function getPrediction() {
     appState.isLoading = true;
     const parentDiv = document.getElementById("myChart").parentNode;
     const loading = `<div class="text-center">
-        <div class="spinner-border" style="width: 3rem; height: 3rem;" role="status">
+        <div class="spinner-grow" style="width: 3rem; height: 3rem;" role="status">
         <span class="sr-only">Loading...</span></div>
         </div>`
     parentDiv.innerHTML += loading;
@@ -172,15 +173,14 @@ function getPrediction() {
             <p>Risk Score: ${risk_score}</p>
             `
         );
-
     })
     .catch((error) => {
         console.log("Something is wrong", error);
     });
 };
 
+// render the markup for the text above the map
 function renderMapAdjacentHTML(totalIncidents) {
-    
     const parentDiv = document.getElementById("mapid").parentNode;
     const wrapper = document.createElement('div');
     wrapper.classList.add("col");
@@ -199,7 +199,7 @@ function renderMapAdjacentHTML(totalIncidents) {
     }
 };
 
-
+// get the first 20 vehicle incident objects
 function getVehicleIncidents() {
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     createXHRequest('GET', services.vehicleCrimeApi)
@@ -222,7 +222,7 @@ function getVehicleIncidents() {
         });
 };
 
-
+// get the next 20 vehicle incident objects
 function getNextVehicleIncidents(event) {
     const button = event.target;
     button.innerHTML += ` <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
