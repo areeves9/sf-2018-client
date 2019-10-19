@@ -153,15 +153,20 @@ function getPrediction() {
         const lastChild = parentDiv.lastChild;
         lastChild.innerHTML = '';
 
+        // take intersection string and TitleCase it  
+        let intersection = appState.prediction.intersection;
+        intersection = intersection.toLowerCase()
+            .split(' ')
+            .map((s) => s.charAt(0).toUpperCase() + s.substring(1))
+            .join(' ');
+
         // const parentDiv = document.getElementById("myChart").parentNode;
         // create chart instance and insert into DOM
         createChart(appState.prediction.riskbyhour.data[0].risk_score);
-        const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} risk of vehicle crime.</h3>`;
-        const intersectionMarkup = `<h6 class="text-center">${appState.prediction.intersection}</h6>`;
+        const riskLevelMarkup = `<h3 class="text-center">Risk ${appState.prediction.riskbyhour.data[0].risk_level} <br/> @${intersection}</h3>`;
 
         const chart = document.getElementById("myChart");
         chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
-        chart.insertAdjacentHTML('afterend', intersectionMarkup);
     })
     .then(() => {
         const { risk_level, risk_score } = appState.prediction.riskbyhour.data[0];
