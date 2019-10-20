@@ -1,5 +1,6 @@
 // LEAFLET JS MAP INSTANCE
 const mymap = L.map('mapid', {
+    attributionControl: false,
     center: [37.759101, -122.414791],
     zoom: 16,
     zoomControl: true,
@@ -36,7 +37,6 @@ const greenIcon = new L.Icon({
     shadowSize: [41, 41]
   });
 
-
 // create a marker instance with hard-coded lat,lng for test purposes
 const currentLocationMarker = L.marker(
     [37.759101, -122.414791], {icon: greenIcon});
@@ -44,7 +44,6 @@ const currentLocationMarker = L.marker(
 
 // APPLICATION STATE
 const appState = {
-    currentPageVehicleCrimeAPI: null,
     prediction: {},
     incidents: [],
     incidentMarkers: [],
@@ -98,7 +97,6 @@ function setRiskByHourScore(objectArray) {
 };
 
 function createXHRequest(method, url) {
-
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     const xhr = new XMLHttpRequest();
     return new Promise((resolve, reject) => {
@@ -125,6 +123,69 @@ function createXHRequest(method, url) {
         // send HTTP request
         xhr.send();
     });
+};
+
+// BUTTON COMPONTNENT
+// 1. SHOULD BE NOT VISIBLE WHEN:
+// a) the map loads for the first time
+// b) when all the incidents have been stored in the state from the server
+
+
+// get the first 20 vehicle incident objects
+function getVehicleIncidents() {
+    document.getElementById("overlay").style.display = 'block';
+    // API GET REQUEST TO CRIME INCIDENTS SERVER
+    createXHRequest('GET', services.vehicleCrimeApi)
+        .then((xhr) => {
+            jsonResponse = xhr.response;
+            appState.incidents = [...appState.incidents, ...jsonResponse.vehicle_incidents];
+            document.getElementById("overlay").style.display = 'none';
+            mymap.addLayer(createIncidentMarkers(appState.incidents));
+
+            // console.log(jsonResponse)
+            // extract data from JSON
+            // const { current_page, total_incidents } = jsonResponse.meta;
+            // const vehicleIncidents = jsonResponse.vehicle_incidents;
+            // update application state
+            // appState.currentPageVehicleCrimeAPI = current_page;
+            // appState.totalIncidents = total_incidents;
+            // instantiate leaflet.js object with markers
+        })
+        .catch((error) => {
+            console.log("Something is wrong", error);
+        });
+};
+
+// get the next 20 vehicle incident objects
+function getNextVehicleIncidents(event) {
+    const button = event.target;
+    button.innerHTML += ` <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
+    
+    if (appState.incidents.length === appState.totalIncidents) {
+        return button.classList.add("hide");
+    } else {
+        appState.incidentMarkers.clearLayers();
+        // request to next page of incident objects
+        createXHRequest('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`)
+        .then((xhr) => {
+            jsonResponse = xhr.response;
+            // extract data from JSON
+            const { current_page, total_incidents } = jsonResponse.meta;
+            // update application state
+            appState.currentPageVehicleCrimeAPI = current_page;
+            appState.incidents = [...appState.incidents, ...jsonResponse.vehicle_incidents];
+            appState.totalIncidents = total_incidents;
+             // add markers to map instance
+            mymap.addLayer(createIncidentMarkers(appState.incidents));
+            // renderMapAdjacentHTML(appState.totalIncidents);
+        })
+        .then(() => {
+            button.removeChild(button.lastElementChild);
+        })
+        .catch((error) => {
+            console.log("Something is wrong", error);
+        });
+    }
 };
 
 // get prediction and render two chart.js instances - risk score and risk over time
@@ -163,7 +224,7 @@ function getPrediction() {
         // const parentDiv = document.getElementById("myChart").parentNode;
         // create chart instance and insert into DOM
         createChart(appState.prediction.riskbyhour.data[0].risk_score);
-        const riskLevelMarkup = `<h3 class="text-center">Risk ${appState.prediction.riskbyhour.data[0].risk_level} <br/> @${intersection}</h3>`;
+        const riskLevelMarkup = `<h3 class="text-center">Risk ${appState.prediction.riskbyhour.data[0].risk_level} <br/> ${intersection}</h3>`;
 
         const chart = document.getElementById("myChart");
         chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
@@ -184,78 +245,36 @@ function getPrediction() {
     });
 };
 
+// const button = document.getElementById("ajax-btn")
+// button.addEventListener('click', (event) => {
+//     getNextVehicleIncidents(event)
+// });
+
 // render the markup for the text above the map
-function renderMapAdjacentHTML(totalIncidents) {
-    const parentDiv = document.getElementById("mapid").parentNode;
-    const wrapper = document.createElement('div');
-    wrapper.classList.add("col");
+function renderMapAdjacentHTML(totalIncidents) {};
+    // const parentDiv = document.getElementById("mapid").parentNode;
+    // const wrapper = dument.createElement('div');
+    // wrapper.classList.add("col");
     // if all pages of objects have been retrieved, disable the button
-    if (appState.incidents) {
-        parentDiv.firstChild.remove();
-        wrapper.innerHTML = '';
-        wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
-        wrapper.innerHTML += (appState.incidents.length === appState.totalIncidents) ? 
-        `` : `<button style="display:block;" class="mx-auto mb-2 btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
-        parentDiv.insertBefore(wrapper, document.getElementById("mapid"));
-    } else {
-        wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
-        wrapper.innerHTML += `<button style="display:block;" class="mx-auto mb-2 btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
-        parentDiv.insertBefore(wrapper, document.getElementById("mapid"));
-    }
-};
+//     if (appState.incidents) {
+//         parentDiv.firstChild.remove();
+//         wrapper.innerHTML = '';
+//         wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
+//         wrapper.innerHTML += (appState.incidents.length === appState.totalIncidents) ? 
+//         `` : `<button style="display:block;" class="mx-auto mb-2 btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
+//         parentDiv.insertBefore(wrapper, document.getElementById("mapid"));
+//     } else {
+//         wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
+//         wrapper.innerHTML += `<button style="display:block;" class="ajax-btn btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
+//         parentDiv.insertAfter(wrapper, document.getElementById("mapid"));
+//     }
+// };
 
-// get the first 20 vehicle incident objects
-function getVehicleIncidents() {
-    // API GET REQUEST TO CRIME INCIDENTS SERVER
-    createXHRequest('GET', services.vehicleCrimeApi)
-        .then((xhr) => {
-            jsonResponse = xhr.response;
-            // extract data from JSON
-            const { current_page, total_incidents } = jsonResponse.meta;
-            const vehicleIncidents = jsonResponse.vehicle_incidents;
-            // update application state
-            appState.currentPageVehicleCrimeAPI = current_page;
-            appState.incidents = vehicleIncidents;
-            appState.totalIncidents = total_incidents;
-            // instantiate leaflet.js object with markers
-            mymap.addLayer(createIncidentMarkers(appState.incidents));
-            // renderHTML();
-            renderMapAdjacentHTML(appState.totalIncidents);
-        })
-        .catch((error) => {
-            console.log("Something is wrong", error);
-        });
-};
 
-// get the next 20 vehicle incident objects
-function getNextVehicleIncidents(event) {
-    const button = event.target;
-    button.innerHTML += ` <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
-    
-    if (appState.incidents.length === appState.totalIncidents) {
-        return button.style.display = "none";
-    } else {
-        appState.incidentMarkers.clearLayers();
-        // request to next page of incident objects
-        createXHRequest('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`)
-        .then((xhr) => {
-            jsonResponse = xhr.response;
-            // extract data from JSON
-            const { current_page, total_incidents } = jsonResponse.meta;
-            // update application state
-            appState.currentPageVehicleCrimeAPI = current_page;
-            appState.incidents = [...appState.incidents, ...jsonResponse.vehicle_incidents];
-            appState.totalIncidents = total_incidents;
-             // add markers to map instance
-            mymap.addLayer(createIncidentMarkers(appState.incidents));
-            renderMapAdjacentHTML(appState.totalIncidents);
-        })
-        .catch((error) => {
-            console.log("Something is wrong", error);
-        });
-    }
-    
-};
+
+
+
+
 
 // create the markers
 function createIncidentMarkers(incidents) {
