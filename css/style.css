@@ -78,3 +78,14 @@ html, body {
     /* background-color: #343a40 !important;
     color: white !important; */
 }
+
+
+/* chart js line chart */
+
+/* canvas#myLineChart {
+    background-color: 'rgb(193, 66, 66)';
+} */
+
+#myLineChart {
+    background-color: #343a40 !important;
+}

@@ -298,17 +298,21 @@ function createChart(score) {
 
 // CHARTS JS - LINE
 function createLineChart(hours, riskScores) {
+    const newHours = hours.map((hour) => {
+        return (hour > 12 && hour != 12) ? (hour - 12).toString() + `:00 PM` : hour.toString() + `:00 AM`;
+    });
+    console.log(newHours)
     const ctx = document.getElementById('myLineChart').getContext('2d');
     const myLineChart = new Chart(ctx, {
         type: 'line',
         data: {
-            labels: hours,
+            labels: newHours,
             datasets: [
                 {
                     data: riskScores,
                     label: "Risk Score",
-                    borderColor: "blue",
-                    backgroundColor: "white",
+                    borderColor: "white",
+                    backgroundColor: "#343a40",
                     pointRadius: 0,
                 },
             ],
@@ -319,11 +323,21 @@ function createLineChart(hours, riskScores) {
             },
             scales: {
                 xAxes: [{
+                    ticks: {
+                        autoSkip: true,
+                        maxTicksLimit: 10,
+                        fontColor: 'white',
+                    },
                     gridLines: {
                         drawOnChartArea: false
                     }
                 }],
                 yAxes: [{
+                    ticks: {
+                        autoSkip: true,
+                        maxTicksLimit: 4,
+                        fontColor: 'white',
+                    },
                     gridLines: {
                         drawOnChartArea: false
                     }
@@ -335,6 +349,8 @@ function createLineChart(hours, riskScores) {
               }
         },
     });
+    // ctx.style.backgroundColor = 'rgba(255,0,0,255)';
+
     return myLineChart.chart = myLineChart;
 };
 
