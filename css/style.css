@@ -3,11 +3,8 @@
     -webkit-box-sizing: border-box;
        -moz-box-sizing: border-box;
             box-sizing: border-box;
-  }
-
-
+}
 /* disable horiztonal scrolling */
-
 html, body {
     max-width: 100%;
     overflow-x: hidden;
@@ -16,7 +13,7 @@ html, body {
 #mapid {
     position: relative; 
     width: auto;
-    height: 400px; 
+    height: 375px; 
 }
 
 #hero {
@@ -30,7 +27,7 @@ html, body {
     display: none;
     position: absolute;
     max-width: 300px;
-    height: 4rem;
+    height: 3rem;
     float: right;
     margin-top: 0.5rem;
     margin-right: 0.5rem;
@@ -39,7 +36,7 @@ html, body {
 }
 
 .card-body > h6{
-    font-size: 1.2rem !important;
+    font-size: 1rem !important;
     font-weight: 600 !important;
 }
 
@@ -66,10 +63,18 @@ html, body {
 
 #overlay-btn {
     display: none;
+    position: absolute;
+    z-index: 9999;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    margin-bottom: 1rem;
+
 }
 
 .load-btn {
     font-weight: bolder !important;
-    background-color: #343a40 !important;
-    color: white !important;
+    
+    /* background-color: #343a40 !important;
+    color: white !important; */
 }

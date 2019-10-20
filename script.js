@@ -74,6 +74,14 @@ const services = {
     vehicleCrimeApi: `https://sfcrime-api.herokuapp.com/vehicles/lat/${userGeolocation.latitude}/lng/${userGeolocation.longitude}/${radius}/`,
 };
 
+
+// EVENT LISTENERS
+const button = document.getElementById("ajaxbtn")
+button.addEventListener('click', () => {
+    getVehicleIncidents(appState.incidentsApiPage);
+})
+
+
 // APPLICATION METHODS
 function getLocalTimeString() {
     const date = new Date();
@@ -126,14 +134,15 @@ function createXHRequest(method, url) {
     });
 };
 
-const button = document.getElementById("ajaxbtn")
-button.addEventListener('click', () => {
-    getVehicleIncidents(appState.incidentsApiPage);
-})
+const spinner = `<span class="spinner spinner-grow"></span>`;
+
+
 // get vehicle incidents from db, passing in page number
 function getVehicleIncidents(page) {
     // display spinner overlay in map box
     document.getElementById("overlay").style.display = 'block';
+    // spinner next to button
+    document.getElementById("ajaxbtn").innerHTML += spinner;
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     createXHRequest('GET',  services.vehicleCrimeApi + `?page=${page}`)
         .then((xhr) => {
@@ -150,7 +159,9 @@ function getVehicleIncidents(page) {
             mymap.addLayer(createIncidentMarkers(appState.incidents));
             // markup added over map
             document.querySelector(".map-header").innerHTML = `
-                Showing ${appState.incidents.length} of ${jsonResponse.meta.total_incidents} Incidnets`;
+                Showing ${appState.incidents.length} of ${jsonResponse.meta.total_incidents} Incidents`;
+            // remove spinner from button
+            document.getElementById("ajaxbtn").lastChild.remove();
             return jsonResponse;
         })
         .then((jsonResponse) => {
@@ -160,7 +171,6 @@ function getVehicleIncidents(page) {
             } else {
                 document.getElementById("overlay-btn").style.display = 'block';
             };
-
             return appState.incidentsApiPage++;
         })
         .catch((error) => {
@@ -219,6 +229,8 @@ function getPrediction() {
             <p>Risk Score: ${risk_score}</p>
             `
         );
+
+        return risk_level, risk_score;
     })
     .catch((error) => {
         console.log("Something is wrong", error);
