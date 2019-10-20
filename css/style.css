@@ -64,6 +64,10 @@ html, body {
     margin-left: -2rem;
 }
 
+#overlay-btn {
+    display: none;
+}
+
 .load-btn {
     font-weight: bolder !important;
     background-color: #343a40 !important;

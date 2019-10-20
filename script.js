@@ -126,12 +126,10 @@ function createXHRequest(method, url) {
     });
 };
 
-// BUTTON COMPONTNENT
-// 1. SHOULD BE NOT VISIBLE WHEN:
-// a) the map loads for the first time
-// b) when all the incidents have been stored in the state from the server
-
-
+const button = document.getElementById("ajaxbtn")
+button.addEventListener('click', () => {
+    getVehicleIncidents(appState.incidentsApiPage);
+})
 // get vehicle incidents from db, passing in page number
 function getVehicleIncidents(page) {
     // display spinner overlay in map box
@@ -139,56 +137,35 @@ function getVehicleIncidents(page) {
     // API GET REQUEST TO CRIME INCIDENTS SERVER
     createXHRequest('GET',  services.vehicleCrimeApi + `?page=${page}`)
         .then((xhr) => {
-            jsonResponse = xhr.response;
-            appState.incidents = [...appState.incidents, ...jsonResponse.vehicle_incidents];
+            const jsonResponse = xhr.response;
+            // Update state - merge with spread operator if appState.incidents has objects
+            if (appState.incidents.length > 0) {
+                appState.incidents = [...appState.incidents, ...jsonResponse.vehicle_incidents];
+            } else {
+                appState.incidents = jsonResponse.vehicle_incidents;
+            };
+            // hide spinner now that response has been obtained
             document.getElementById("overlay").style.display = 'none';
-            document.querySelector(".card").style.display = 'block';
+            // createIncidentMarkers returns a clustergroup, makers added to map
             mymap.addLayer(createIncidentMarkers(appState.incidents));
+            // markup added over map
+            document.querySelector(".map-header").innerHTML = `
+                Showing ${appState.incidents.length} of ${jsonResponse.meta.total_incidents} Incidnets`;
+            return jsonResponse;
+        })
+        .then((jsonResponse) => {
+            // show or hide the button if there are more objects to load
+            if (appState.incidents.length === jsonResponse.meta.total_incidents) {
+                document.getElementById("overlay-btn").style.display = 'none';
+            } else {
+                document.getElementById("overlay-btn").style.display = 'block';
+            };
 
-            // console.log(jsonResponse)
-            // extract data from JSON
-            // const { current_page, total_incidents } = jsonResponse.meta;
-            // const vehicleIncidents = jsonResponse.vehicle_incidents;
-            // update application state
-            // appState.currentPageVehicleCrimeAPI = current_page;
-            // appState.totalIncidents = total_incidents;
-            // instantiate leaflet.js object with markers
+            return appState.incidentsApiPage++;
         })
         .catch((error) => {
             console.log("Something is wrong", error);
         });
-};
-
-// get the next 20 vehicle incident objects
-function getNextVehicleIncidents(event) {
-    const button = event.target;
-    button.innerHTML += ` <span class="spinner-border spinner-border-sm" role="status" aria-hidden="true"></span>`;
-    
-    if (appState.incidents.length === appState.totalIncidents) {
-        return button.classList.add("hide");
-    } else {
-        appState.incidentMarkers.clearLayers();
-        // request to next page of incident objects
-        createXHRequest('GET', services.vehicleCrimeApi + `?page=${appState.currentPageVehicleCrimeAPI + 1}`)
-        .then((xhr) => {
-            jsonResponse = xhr.response;
-            // extract data from JSON
-            const { current_page, total_incidents } = jsonResponse.meta;
-            // update application state
-            appState.currentPageVehicleCrimeAPI = current_page;
-            appState.incidents = [...appState.incidents, ...jsonResponse.vehicle_incidents];
-            appState.totalIncidents = total_incidents;
-             // add markers to map instance
-            mymap.addLayer(createIncidentMarkers(appState.incidents));
-            // renderMapAdjacentHTML(appState.totalIncidents);
-        })
-        .then(() => {
-            button.removeChild(button.lastElementChild);
-        })
-        .catch((error) => {
-            console.log("Something is wrong", error);
-        });
-    }
 };
 
 // get prediction and render two chart.js instances - risk score and risk over time
@@ -248,41 +225,12 @@ function getPrediction() {
     });
 };
 
-// const button = document.getElementById("ajax-btn")
-// button.addEventListener('click', (event) => {
-//     getNextVehicleIncidents(event)
-// });
-
-// render the markup for the text above the map
-function renderMapAdjacentHTML(totalIncidents) {};
-    // const parentDiv = document.getElementById("mapid").parentNode;
-    // const wrapper = dument.createElement('div');
-    // wrapper.classList.add("col");
-    // if all pages of objects have been retrieved, disable the button
-//     if (appState.incidents) {
-//         parentDiv.firstChild.remove();
-//         wrapper.innerHTML = '';
-//         wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
-//         wrapper.innerHTML += (appState.incidents.length === appState.totalIncidents) ? 
-//         `` : `<button style="display:block;" class="mx-auto mb-2 btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
-//         parentDiv.insertBefore(wrapper, document.getElementById("mapid"));
-//     } else {
-//         wrapper.innerHTML += `<h6 class="text-center">Showing ${appState.incidents.length} of ${totalIncidents} Incidents</h6>`;;
-//         wrapper.innerHTML += `<button style="display:block;" class="ajax-btn btn btn-success"onclick="getNextVehicleIncidents(event)">Load More </button>`;
-//         parentDiv.insertAfter(wrapper, document.getElementById("mapid"));
-//     }
-// };
-
-
-
-
-
-
 
 // create the markers
 function createIncidentMarkers(incidents) {
     // create cluster instance
     const markers = L.markerClusterGroup();
+    const incidentMarkers = [];
     // iterate through array of incident objects
     incidents.map(item => {
         // for each incident object, add a layer to the marker cluster instance
@@ -293,8 +241,10 @@ function createIncidentMarkers(incidents) {
             <li>${item.incident_date}</li>
         </ul>`
         );
+        incidentMarkers.push(markers)
     });
-    return appState.incidentMarkers = markers;
+    appState.incidentMarkers = incidentMarkers;
+    return markers;
 };
 
 // CHARTS JS - RADIAL
@@ -378,9 +328,8 @@ function createLineChart(hours, riskScores) {
     return myLineChart.chart = myLineChart;
 };
 
-
 getPrediction();
-getVehicleIncidents();
+getVehicleIncidents(appState.incidentsApiPage);
 
 // GEOLOCATION API - Conditional, then set global userGeoLocation object with position.coords.lat/lng
 // if ("geolocation" in navigator) {
