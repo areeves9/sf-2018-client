@@ -46,6 +46,7 @@ const currentLocationMarker = L.marker(
 const appState = {
     prediction: {},
     incidents: [],
+    incidentsApiPage: 1,
     incidentMarkers: [],
     isLoading: false,
     riskByHourScore: [],
@@ -131,15 +132,17 @@ function createXHRequest(method, url) {
 // b) when all the incidents have been stored in the state from the server
 
 
-// get the first 20 vehicle incident objects
-function getVehicleIncidents() {
+// get vehicle incidents from db, passing in page number
+function getVehicleIncidents(page) {
+    // display spinner overlay in map box
     document.getElementById("overlay").style.display = 'block';
     // API GET REQUEST TO CRIME INCIDENTS SERVER
-    createXHRequest('GET', services.vehicleCrimeApi)
+    createXHRequest('GET',  services.vehicleCrimeApi + `?page=${page}`)
         .then((xhr) => {
             jsonResponse = xhr.response;
             appState.incidents = [...appState.incidents, ...jsonResponse.vehicle_incidents];
             document.getElementById("overlay").style.display = 'none';
+            document.querySelector(".card").style.display = 'block';
             mymap.addLayer(createIncidentMarkers(appState.incidents));
 
             // console.log(jsonResponse)
