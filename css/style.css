@@ -22,7 +22,7 @@ html, body {
     height: 150px;
 }
 
-.card {
+.map-card {
     z-index: 9999;
     display: none;
     position: absolute;
@@ -35,7 +35,7 @@ html, body {
     border-radius: 0.6rem !important;
 }
 
-.card-body > h6{
+.map-card-body > h6{
     font-size: 1rem !important;
     font-weight: 600 !important;
 }

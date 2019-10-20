@@ -212,10 +212,13 @@ function getPrediction() {
         // const parentDiv = document.getElementById("myChart").parentNode;
         // create chart instance and insert into DOM
         createChart(appState.prediction.riskbyhour.data[0].risk_score);
-        const riskLevelMarkup = `<h3 class="text-center">Risk ${appState.prediction.riskbyhour.data[0].risk_level} <br/> ${intersection}</h3>`;
+        const riskLevelMarkup = `<h3 class="text-center">${appState.prediction.riskbyhour.data[0].risk_level} Risk</h3>`;
+        const intersectionMarkup = `<h3 class="text-center">${intersection}</h3>`
+
 
         const chart = document.getElementById("myChart");
         chart.insertAdjacentHTML('beforebegin', riskLevelMarkup);
+        chart.insertAdjacentHTML('afterend', intersectionMarkup);
     })
     .then(() => {
         const { risk_level, risk_score } = appState.prediction.riskbyhour.data[0];
@@ -270,7 +273,7 @@ function createChart(score) {
             ],
             datasets: [
                 {
-                    backgroundColor: "#ff1414",
+                    backgroundColor: "#343a40",
                     data: [score],
                 }
             ],
@@ -346,6 +349,8 @@ function createLineChart(hours, riskScores) {
             title: {
                 display: true,
                 text: `Risk Score By Hour (${getCurrentDate()})`,
+                fontSize: 22,
+                fontColor: 'white',
               }
         },
     });
