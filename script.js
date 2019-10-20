@@ -165,12 +165,10 @@ function getVehicleIncidents(page) {
             return jsonResponse;
         })
         .then((jsonResponse) => {
-            // show or hide the button if there are more objects to load
-            if (appState.incidents.length === jsonResponse.meta.total_incidents) {
-                document.getElementById("overlay-btn").style.display = 'none';
-            } else {
-                document.getElementById("overlay-btn").style.display = 'block';
-            };
+            // check if all incidents have been added to application state
+            (appState.incidents.length === jsonResponse.meta.total_incidents) ?
+            document.getElementById("overlay-btn").style.display = 'none' :  
+            document.getElementById("overlay-btn").style.display = 'block';
             return appState.incidentsApiPage++;
         })
         .catch((error) => {
