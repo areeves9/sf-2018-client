@@ -248,11 +248,10 @@ function createIncidentMarkers(incidents) {
     incidents.map(item => {
         // for each incident object, add a layer to the marker cluster instance
         markers.addLayer(L.marker([item.latitude, item.longitude], {icon: redIcon}))
-        .bindPopup(`<ul>
-            <li>${item.incident_subcategory}</li>
-            <li>${item.incident_description}</li>
-            <li>${item.incident_date}</li>
-        </ul>`
+        .bindPopup(`
+        <p class="text-center m-0 p-0" style="font-size:20px;color:#343a40;">${item.incident_subcategory}</p>
+            <p class="text-center m-0 p-0" style="font-size:16px;color:black;">${item.incident_description}</p>
+            <p class="text-center m-0 p-0" style="font-size:16px;color:black;font-style:italic;">${item.incident_date}</p>`
         );
         incidentMarkers.push(markers)
     });
